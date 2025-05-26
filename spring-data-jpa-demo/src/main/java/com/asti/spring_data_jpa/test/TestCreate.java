@@ -1,0 +1,29 @@
+package com.asti.spring_data_jpa.test;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.asti.spring_data_jpa.entity.Employee;
+import com.asti.spring_data_jpa.repository.EmployeeRepository;
+
+@RestController
+public class TestCreate {
+
+	@Autowired
+	private EmployeeRepository employeeRepository;
+	
+	@GetMapping("/create")
+	public void addEmployee() {
+		
+		Employee emp = Employee.builder()
+		.name("Prapti")
+		.age(21)
+		.salary(500000.0)
+		.address("Lucknow")
+		.build();
+		
+		Employee employeeDb = employeeRepository.save(emp);
+		System.out.println("EmployeeDb "+ employeeDb);
+	}
+}

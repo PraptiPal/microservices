@@ -1,0 +1,81 @@
+server:
+  port: 9002
+  error:
+    include-binding-errors: always
+    include-message: always
+    include-stacktrace: never
+spring:
+  application:
+    name: accounts
+  profiles:
+    active: "prod"
+  config:
+    import: "optional:configserver:http://localhost:8082/"
+  datasource:
+    url: jdbc:postgresql://localhost:5432/accounts_db
+    username: postgres
+    password: root
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: true
+  cloud:
+    openfeign:
+      circuitbreaker:
+        enabled: true
+    function:
+      definition: ackFromMsgMs;updateAccountMobileNumber;rollbackAccountMobileNumber;rollbackCustomerMobileNumber
+    stream:
+      bindings:
+        sendCommunication-out-0:
+          destination: send-communication
+        updateAccountMobileNumber-out-0:
+          destination: update-account-mobile-number
+        updateCardMobileNumber-out-0:
+          destination: update-card-mobile-number
+        ackFromMsgMs-in-0:
+          destination: communication-sent
+          group: ${spring.application.name}
+        updateAccountMobileNumber-in-0:
+          destination: update-account-mobile-number
+          group: ${spring.application.name}
+        rollbackAccountMobileNumber-in-0:
+          destination: rollback-account-mobile-number
+          group: ${spring.application.name}
+        rollbackCustomerMobileNumber-in-0:
+          destination: rollback-customer-mobile-number
+          group: ${spring.application.name}
+      kafka:
+        binder:
+          brokers:
+            - localhost:9092
+management:
+  health:
+    circuitbreakers:
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+    health:
+      show-details: always
+resilience4j.circuitbreaker:
+  configs:
+    default:
+      slidingWindowSize: 10
+      permittedNumberOfCallsInHalfOpenState: 3
+      failureRateThreshold: 50
+      waitDurationInOpenState: 10s
+      automaticTransitionFromOpenToHalfOpenEnabled: true
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8081/eureka/
+    fetch-registry: true
+    register-with-eureka: true

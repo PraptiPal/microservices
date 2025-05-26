@@ -1,0 +1,11 @@
+build:
+  version: "1.0"
+
+loans:
+  message: "Welcome to Ali Bank, LOANS-LOCAL Service Support Info"
+  contactDetails:
+    name: "Md Ali - Developer(LOCAL)"
+    email: "md.ali@icress-local.com"
+  onCallSupport:
+    - (555) 555-123456
+    - (666) 666-123456

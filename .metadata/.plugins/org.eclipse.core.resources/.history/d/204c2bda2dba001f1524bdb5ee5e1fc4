@@ -1,0 +1,5 @@
+package com.asti.myservlets;
+
+public class HelloServlet {
+
+}

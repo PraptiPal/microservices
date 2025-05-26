@@ -1,0 +1,81 @@
+server:
+  port: 8080
+spring:
+  application:
+    name: api-gateway
+  config:
+    import: "optional:configserver:http://localhost:8082/"
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lowerCaseServiceId: true
+      routes:
+        - id: accouts
+          uri: http://localhost:9002
+          predicates:
+          - Path=/api/accounts/**
+          #- Path=/api/customer/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: accountsCircuitBreaker
+                fallbackUri: forward:/accounts-fallback
+        - id: loans
+          uri: http://localhost:9001
+          predicates:
+          - Path=/api/loans/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: loansCircuitBreaker
+                fallbackUri: forward:/loans-fallback
+        - id: cards
+          uri: http://localhost:9000
+          predicates:
+          - Path=/api/cards/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: cardsCircuitBreaker
+                fallbackUri: forward:/cards-fallback
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: "http://localhost:7080/realms/master/protocol/openid-connect/certs"
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8081/eureka/
+    fetch-registry: true
+    register-with-eureka: true
+# circuit configuration below
+management:
+  health:
+    circuitbreakers:
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+    health:
+      show-details: always
+resilience4j.circuitbreaker:
+  configs:
+    default:
+      slidingWindowSize: 10
+      failureRateThreshold: 50
+      waitDurationInOpenState: 10s
+      permittedNumberOfCallsInHalfOpenState: 3
+      #minimumNumberOfCalls: 5
+      #automaticTransitionFromOpenToHalfOpenEnabled: true
+      #registerHealthIndicator: true
+  instances:
+    accountsCircuitBreaker:
+      baseConfig: default
+    loansCircuitBreaker:
+      baseConfig: default
+    cardsCircuitBreaker:
+      baseConfig: default

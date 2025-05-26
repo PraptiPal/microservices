@@ -1,0 +1,30 @@
+server:
+  port: 9002
+  error:
+    include-binding-errors: always
+    include-message: always
+    include-stacktrace: never
+spring:
+  application:
+    name: accounts
+  datasource:
+    url: jdbc:postgresql://accounts_pgcn:5431/accounts_db
+    username: postgres
+    password: root
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: true
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://service-registry-ms:8081/eureka/
+    fetch-registry: true
+    register-with-eureka: true

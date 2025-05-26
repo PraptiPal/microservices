@@ -1,0 +1,11 @@
+build:
+  version: "1.0"
+
+cards:
+  message: "Welcome to Ali Bank, CARDS-DEV Service Support Info"
+  contactDetails:
+    name: "Md Ali - Developer(DEV)"
+    email: "md.ali@icress-dev.com"
+  onCallSupport:
+    - (333) 333-123456
+    - (444) 444-123456

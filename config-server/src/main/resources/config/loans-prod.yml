@@ -1,0 +1,11 @@
+build:
+  version: "1.0"
+
+loans:
+  message: "Welcome to Ali Bank, LOANS-PROD Service Support Info"
+  contactDetails:
+    name: "Md Ali - Developer"
+    email: "md.ali@icress.com"
+  onCallSupport:
+    - (555) 555-123456
+    - (666) 666-123456

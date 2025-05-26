@@ -1,0 +1,213 @@
+version: '4.0'
+
+services:
+  zookeeper:
+    image: bitnami/zookeeper:latest
+    container_name: zookeeper
+    ports:
+      - 2181:2181
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+  kafka:
+    image: bitnami/kafka:latest
+    container_name: kafka
+    ports:
+      - "9092:9092"
+    environment:
+      - KAFKA_BROKER_ID=1
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    depends_on:
+      - zookeeper
+  config-server-ms:
+    image: prapti2108/config-server:latest
+    container_name: config-server-ms
+    ports:
+      - 8082:8082
+    healthcheck:
+      test: "curl --fail --silent config-server-ms:8082/actuator/health/readiness | grep UP || exit 1"
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - alibank-ms-network
+    environment:
+      - SPRING_APPLICATION_NAME=config-server
+  service-registry-ms:
+    image: prapti2108/service-registry:latest
+    container_name: service-registry-ms
+    ports:
+      - 8081:8081
+    networks:
+      - alibank-ms-network
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+  accountsdb:
+    container_name: accountsdb
+    image: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: accounts_db
+      PGDATA: /var/lib/postgresql/adata
+    volumes:
+      - accouts_dbdata:/var/lib/postgresql/adata
+    ports:
+      - 5431:5432
+    networks:
+      - postgres
+    restart: unless-stopped
+
+  loansdb:
+    container_name: loansdb
+    image: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: loans_db
+      PGDATA: /var/lib/postgresql/ldata
+    volumes:
+      - loans_dbdata:/var/lib/postgresql/ldata
+    ports:
+      - 5432:5432
+    networks:
+      - postgres
+    restart: unless-stopped
+
+  cardsdb:
+    container_name: cardsdb
+    image: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: cards_db
+      PGDATA: /var/lib/postgresql/cdata
+    volumes:
+      - cards_dbdata:/var/lib/postgresql/cdata
+    ports:
+      - 5433:5432
+    networks:
+      - postgres
+    restart: unless-stopped
+
+  accounts-ms:
+    image: prapti2108/accounts:latest
+    container_name: accounts-ms
+    ports:
+      - 9002:9002
+    healthcheck:
+      test: "curl --fail --silent config-server-ms:8082/actuator/health/readiness | grep UP || exit 1"
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - alibank-ms-network
+      - postgres
+    environment:
+      - SPRING_APPLICATION_NAME=accounts
+      - SPRING_CONFIG_IMPORT=configserver:http://config-server-ms:8082/
+      - SPRING_PROFILES_ACTIVE=prod
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=root
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://accountsdb:5432/accounts_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    depends_on:
+      - accountsdb
+      - config-server-ms
+      - kafka
+
+  loans-ms:
+    image: prapti2108/loans:latest
+    container_name: loans-ms
+    ports:
+      - 9001:9001
+    healthcheck:
+      test: "curl --fail --silent config-server-ms:8082/actuator/health/readiness | grep UP || exit 1"
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - alibank-ms-network
+      - postgres
+    environment:
+      - SPRING_APPLICATION_NAME=loans
+      - SPRING_CONFIG_IMPORT=configserver:http://config-server-ms:8082/
+      - SPRING_PROFILES_ACTIVE=prod
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=root
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://loansdb:5432/loans_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    depends_on:
+      - loansdb
+      - config-server-ms
+      - kafka
+
+  cards-ms:
+    image: prapti2108/cards:latest
+    container_name: cards-ms
+    ports:
+      - 9000:9000
+    healthcheck:
+      test: "curl --fail --silent config-server-ms:8082/actuator/health/readiness | grep UP || exit 1"
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - alibank-ms-network
+      - postgres
+    environment:
+      - SPRING_APPLICATION_NAME=loans
+      - SPRING_CONFIG_IMPORT=configserver:http://config-server-ms:8082/
+      - SPRING_PROFILES_ACTIVE=prod
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=root
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://cardsdb:5432/cards_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    depends_on:
+      - cardsdb
+      - config-server-ms
+      - kafka
+
+  api-gateway-ms:
+    image: prapti2108/api-gateway:latest
+    container_name: api-gateway-ms
+    ports:
+      - 8080:8080
+    networks:
+      - alibank-ms-network
+    environment:
+      - SPRING_APPLICATION_NAME=api-gateway
+      - SPRING_CONFIG_IMPORT=configserver:http://config-server-ms:8082/
+      - SPRING_PROFILES_ACTIVE=prod
+    depends_on:
+      accounts-ms:
+        condition: service_healthy
+      cards-ms:
+        condition: service_healthy
+      loans-ms:
+        condition: service_healthy
+networks:
+  alibank-ms-network:
+    driver: bridge
+  postgres:
+    driver: bridge
+
+volumes:
+  accouts_dbdata:
+  loans_dbdata:
+  cards_dbdata:

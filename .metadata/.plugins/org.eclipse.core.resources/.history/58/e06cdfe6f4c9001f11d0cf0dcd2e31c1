@@ -1,0 +1,5 @@
+package com.asti.spring_data_jpa.test;
+
+public class TestCreate {
+
+}

@@ -1,0 +1,12 @@
+package com.asti.myservlets.test;
+
+import com.asti.myservlets.beans.Hello;
+
+public class XmlConfigTest {
+
+	public static void main(String[] args) {
+		Hello h = new Hello();
+		System.out.println(h.greet());
+	}
+
+}

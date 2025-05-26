@@ -1,0 +1,70 @@
+package com.asti.spring_data_jpa.controller;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
+
+import com.asti.spring_data_jpa.entity.Employee;
+import com.asti.spring_data_jpa.exceptions.EmployeeAlreadyExistsException;
+import com.asti.spring_data_jpa.service.EmployeeService;
+
+@RestController
+public class EmployeeController {
+
+	@Autowired
+	private EmployeeService employeeService;
+	
+	@PostMapping("/api/v1/employee")
+	public ResponseEntity<Employee> createEmployee(@RequestBody Employee employeeInput) {
+		
+		Employee employee = null;
+		
+		try {
+			employee = employeeService.createEmployee(employeeInput);
+		}catch(EmployeeAlreadyExistsException exception) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, exception.getMessage());
+		}
+		
+		return new ResponseEntity<>(employee, HttpStatus.CREATED);
+	}
+	
+	@GetMapping("/api/v1/employee")
+	public ResponseEntity<List<Employee>> getAllEmployees() {
+		List<Employee> employees = employeeService.getAllEmployees();
+		return new ResponseEntity<>(employees, HttpStatus.OK);
+	}
+	
+	@GetMapping("/api/v1/employee/{empId}")
+	public ResponseEntity<Employee> getEmployeeById(@PathVariable(value = "empId") Long empId) {
+		Employee employee = employeeService.getEmployee(empId);
+		return new ResponseEntity<>(employee, HttpStatus.OK);
+	}
+	
+	@DeleteMapping("/api/v1/employee/{empId}")
+	public ResponseEntity<String> deleteEmployeeById(@PathVariable(value = "empId") Long empId) {
+		
+		boolean isEmployeeDeleted = employeeService.deletetEmployee(empId);
+		
+		if(isEmployeeDeleted) 
+			return new ResponseEntity<>("Employee with Id " + empId + " is deleted succesfully", HttpStatus.OK);
+		else 
+			return new ResponseEntity<>("Employee with Id " + empId + " does not exist", HttpStatus.OK);
+	}
+	
+	@PutMapping("/api/v1/employee/{empId}")
+	public ResponseEntity<Employee> updateEmployee(@PathVariable(value = "empId") Long empId, @RequestBody Employee employeeInput) {
+		Employee employee = employeeService.updateEmployee(empId, employeeInput);
+		return new ResponseEntity<>(employee, HttpStatus.OK);
+	}
+}
